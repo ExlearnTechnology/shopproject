@@ -277,7 +277,16 @@ app.get<{ Querystring: { email?: string } }>("/orders", async (request, reply) =
   }
   const result = await db.query(
     `SELECT id, customer_id AS "customerId", customer_name AS "customerName",
-            customer_email AS "customerEmail", status, total::float8 AS total, created_at AS "createdAt"
+            customer_email AS "customerEmail", status, total::float8 AS total, created_at AS "createdAt",
+            COALESCE((
+              SELECT json_agg(json_build_object(
+                'productId', product_id,
+                'name', product_name,
+                'quantity', quantity,
+                'unitPrice', unit_price::float8
+              ) ORDER BY id)
+              FROM order_items WHERE order_id = orders.id
+            ), '[]'::json) AS items
      FROM orders WHERE customer_email = $1 ORDER BY created_at DESC LIMIT 50`,
     [email],
   );

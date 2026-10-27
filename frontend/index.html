@@ -96,6 +96,11 @@
       <div class="cart-items" id="cart-items"></div>
       <div class="cart-footer">
         <div class="cart-total"><span>Subtotal</span><strong id="cart-total">$0.00</strong></div>
+        <section class="order-success" id="order-success" role="status" aria-live="polite" hidden>
+          <h3>Order successful!</h3>
+          <p id="order-success-details"></p>
+          <ul id="order-success-items"></ul>
+        </section>
         <label class="checkout-field">Your name<input id="checkout-name" name="name" autocomplete="name" maxlength="120" required /></label>
         <label class="checkout-field">Email address<input id="checkout-email" name="email" type="email" autocomplete="email" maxlength="254" required /></label>
         <button class="button button-dark checkout-button" id="checkout-button" type="button">Place order <span aria-hidden="true">↗</span></button>

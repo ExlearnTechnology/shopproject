@@ -227,6 +227,10 @@ h2 { margin-bottom: 0; font-size: clamp(30px, 3.4vw, 42px); letter-spacing: -.8p
 .checkout-button { width: 100%; }
 .checkout-field { display: block; margin-bottom: 12px; color: #77786f; font-size: 10px; }
 .checkout-field input { display: block; width: 100%; height: 38px; margin-top: 5px; padding: 0 10px; border: 1px solid var(--line); outline-color: var(--green); background: white; font-size: 12px; }
+.order-success { margin-bottom: 16px; padding: 14px; border: 1px solid #bfd2c1; color: #355a45; background: #edf4ed; font-size: 11px; line-height: 1.6; }
+.order-success h3 { margin: 0 0 5px; font-size: 14px; }
+.order-success p { margin: 0; }
+.order-success ul { margin: 6px 0 0; padding-left: 17px; }
 .activity-button { display: block; margin: 14px auto 0; border: 0; color: var(--green); background: transparent; font-size: 11px; cursor: pointer; }
 .activity-button:hover { text-decoration: underline; }
 .customer-activity { max-height: 150px; overflow: auto; margin-top: 10px; color: #66675f; font-size: 10px; line-height: 1.7; }

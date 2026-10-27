@@ -114,6 +114,7 @@ function showToast(message) {
 
 function addToCart(id) {
   if (cartSaving || !products.some((product) => product.id === id)) return;
+  document.querySelector("#order-success").hidden = true;
   const nextCart = new Map(cart);
   nextCart.set(id, (nextCart.get(id) ?? 0) + 1);
   void saveCart(nextCart).then((saved) => {
@@ -208,6 +209,7 @@ async function placeOrder() {
     const orderResult = await orderResponse.json();
     if (!orderResponse.ok) throw new Error(orderResult.error ?? "Could not place your order");
 
+    showOrderSuccess(orderResult.order, customerResult.customer);
     cart.clear();
     localStorage.removeItem(cartIdKey);
     resetCartId();
@@ -219,6 +221,25 @@ async function placeOrder() {
     checkoutButton.innerHTML = 'Place order <span aria-hidden="true">↗</span>';
     checkoutButton.disabled = cart.size === 0;
   }
+}
+
+function showOrderSuccess(order, customer) {
+  const success = document.querySelector("#order-success");
+  const details = document.querySelector("#order-success-details");
+  const items = document.querySelector("#order-success-items");
+  details.textContent = `Order #${order.id} · ${customer.name} · ${customer.email} · ${formatPrice(order.total)}`;
+  items.replaceChildren();
+  for (const product of order.items) {
+    const item = document.createElement("li");
+    item.textContent = `${product.name} × ${product.quantity} — ${formatPrice(product.unitPrice * product.quantity)}`;
+    items.append(item);
+  }
+  const confirmation = document.createElement("li");
+  confirmation.textContent = order.notificationStatus === "pending"
+    ? "Order confirmation is pending."
+    : "Order confirmation recorded.";
+  items.append(confirmation);
+  success.hidden = false;
 }
 
 async function loadCustomerActivity() {
@@ -251,7 +272,10 @@ async function loadCustomerActivity() {
     const list = document.createElement("ul");
     for (const order of ordersResult.orders) {
       const item = document.createElement("li");
-      item.textContent = `Order #${order.id} · ${formatPrice(order.total)} · ${order.status}`;
+      const itemDetails = Array.isArray(order.items)
+        ? order.items.map((product) => `${product.name} × ${product.quantity}`).join(", ")
+        : "";
+      item.textContent = `Order #${order.id} · ${formatPrice(order.total)} · ${order.status}${itemDetails ? ` · ${itemDetails}` : ""}`;
       list.append(item);
     }
     for (const notification of notificationsResult.notifications) {
