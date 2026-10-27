@@ -1,12 +1,12 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import pg, { type Pool } from "pg";
+import pg, { type Pool as PgPool } from "pg";
 
 const { Pool } = pg;
 
 export interface ServiceInfo {
   name: string;
   description: string;
-  initialize?: (pool: Pool) => Promise<void>;
+  initialize?: (pool: PgPool) => Promise<void>;
 }
 
 export function createService(info: ServiceInfo): {
