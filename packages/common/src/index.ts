@@ -11,7 +11,7 @@ export interface ServiceInfo {
 
 export function createService(info: ServiceInfo): {
   app: FastifyInstance;
-  db: Pool;
+  db: PgPool;
   start: () => Promise<void>;
 } {
   const port = Number(process.env.PORT ?? 3000);
