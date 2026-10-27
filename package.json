@@ -1,0 +1,17 @@
+{
+  "name": "shop-microservices",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run build -w @shop/common && npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.4",
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,137 @@
+name: Build and deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - uses: azure/setup-helm@v4
+      - name: Validate Helm chart
+        run: helm lint ./helm/shop --set-string image.registry=example.dkr.ecr.us-east-1.amazonaws.com --set-string image.tag=test
+
+  build-and-push:
+    needs: validate
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      matrix:
+        service: [catalog, customers, orders, notifications]
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: shop-${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: login-ecr
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/shop-${{ matrix.service }}:${{ github.sha }}-${{ github.run_attempt }}
+
+  deploy:
+    needs: build-and-push
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: login-ecr
+      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-helm@v4
+      - name: Configure cluster access
+        run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+      - name: Load the RDS secret into Kubernetes
+        env:
+          DB_SECRET_ARN: ${{ vars.DB_SECRET_ARN }}
+        run: |
+          aws secretsmanager get-secret-value \
+            --secret-id "$DB_SECRET_ARN" \
+            --query SecretString \
+            --output text > "$RUNNER_TEMP/rds-secret.json"
+          python - "$RUNNER_TEMP/rds-secret.json" "$RUNNER_TEMP/db.env" <<'PY'
+          import json, sys
+          with open(sys.argv[1], encoding="utf-8") as secret_file:
+              secret = json.load(secret_file)
+          values = {
+              "PGHOST": secret["host"],
+              "PGPORT": secret["port"],
+              "PGDATABASE": secret["dbname"],
+              "PGUSER": secret["username"],
+              "PGPASSWORD": secret["password"],
+              "PGSSLMODE": "require",
+          }
+          with open(sys.argv[2], "w", encoding="utf-8") as env_file:
+              for key, value in values.items():
+                  env_file.write(f"{key}={value}\n")
+          PY
+          kubectl create namespace shop --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic shop-db \
+            --namespace shop \
+            --from-env-file="$RUNNER_TEMP/db.env" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          rm -f "$RUNNER_TEMP/rds-secret.json" "$RUNNER_TEMP/db.env"
+      - name: Adopt existing resources for Helm
+        run: |
+          if ! helm status shop --namespace shop >/dev/null 2>&1; then
+            for service in catalog customers orders notifications; do
+              for kind in deployment service; do
+                resource="$kind/$service"
+                if kubectl get "$resource" --namespace shop >/dev/null 2>&1; then
+                  kubectl label "$resource" \
+                    app.kubernetes.io/managed-by=Helm \
+                    --namespace shop --overwrite
+                  kubectl annotate "$resource" \
+                    meta.helm.sh/release-name=shop \
+                    meta.helm.sh/release-namespace=shop \
+                    --namespace shop --overwrite
+                fi
+              done
+            done
+          fi
+      - name: Deploy Helm release
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}-${{ github.run_attempt }}
+        run: |
+          helm upgrade --install shop ./helm/shop \
+            --namespace shop \
+            --create-namespace \
+            --set-string image.registry="$REGISTRY" \
+            --set-string image.tag="$IMAGE_TAG" \
+            --wait \
+            --timeout 5m

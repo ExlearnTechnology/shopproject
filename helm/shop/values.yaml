@@ -1,0 +1,49 @@
+image:
+  registry: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+database:
+  secretName: shop-db
+
+services:
+  catalog:
+    replicas: 2
+    schema: catalog
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  customers:
+    replicas: 2
+    schema: customers
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  orders:
+    replicas: 2
+    schema: orders
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  notifications:
+    replicas: 2
+    schema: notifications
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi

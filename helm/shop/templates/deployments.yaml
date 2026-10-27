@@ -1,0 +1,54 @@
+{{- $registry := required "image.registry must be set to the ECR registry hostname" .Values.image.registry | trimSuffix "/" -}}
+{{- $tag := required "image.tag must be set to the image tag" .Values.image.tag -}}
+{{- range $name, $service := .Values.services }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: {{ $name }}
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  replicas: {{ $service.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+        app.kubernetes.io/name: {{ $name }}
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: "{{ $registry }}/shop-{{ $name }}:{{ $tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "3000"
+            - name: PG_SCHEMA
+              value: {{ $service.schema | quote }}
+          envFrom:
+            - secretRef:
+                name: {{ $.Values.database.secretName }}
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 20
+          resources:
+            {{- toYaml $service.resources | nindent 12 }}
+---
+{{- end }}

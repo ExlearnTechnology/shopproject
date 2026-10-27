@@ -1,0 +1,10 @@
+aws_region   = "us-east-1"
+project_name = "shop"
+
+github_owner      = "YOUR_GITHUB_OWNER"
+github_repository = "YOUR_REPOSITORY"
+github_branch     = "main"
+
+# Prefer a fixed-IP self-hosted runner or VPN CIDR for the EKS API.
+# Hosted runner IP ranges change; the default is open to the internet but IAM-authenticated.
+# cluster_endpoint_public_access_cidrs = ["203.0.113.10/32"]

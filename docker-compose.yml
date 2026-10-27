@@ -1,0 +1,75 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shop}
+      POSTGRES_USER: ${POSTGRES_USER:-shop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-only-change-me}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  catalog:
+    build:
+      context: .
+      dockerfile: services/catalog/Dockerfile
+    environment: &service_environment
+      PORT: 3000
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${PGDATABASE:-shop}
+      PGUSER: ${PGUSER:-shop}
+      PGPASSWORD: ${PGPASSWORD:-local-only-change-me}
+      PGSSLMODE: disable
+      PG_SCHEMA: catalog
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  customers:
+    build:
+      context: .
+      dockerfile: services/customers/Dockerfile
+    environment:
+      <<: *service_environment
+      PG_SCHEMA: customers
+    ports:
+      - "3002:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  orders:
+    build:
+      context: .
+      dockerfile: services/orders/Dockerfile
+    environment:
+      <<: *service_environment
+      PG_SCHEMA: orders
+    ports:
+      - "3003:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notifications:
+    build:
+      context: .
+      dockerfile: services/notifications/Dockerfile
+    environment:
+      <<: *service_environment
+      PG_SCHEMA: notifications
+    ports:
+      - "3004:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

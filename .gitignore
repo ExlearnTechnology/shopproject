@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+!.env.example
