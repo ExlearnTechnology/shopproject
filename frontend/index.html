@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Shop thoughtful everyday pieces, place orders, and see live service status."
+    />
+    <title>goodgoods — thoughtfully picked</title>
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="wordmark" href="#" aria-label="goodgoods home">
+        goodgoods<span>.</span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#shop">Shop</a>
+        <a href="#services">Our services</a>
+      </nav>
+      <button class="cart-button" id="cart-toggle" type="button" aria-label="Open shopping bag">
+        Bag <span id="cart-count">0</span>
+      </button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">A little more thoughtful</p>
+          <h1>Good things.<br />Made for living.</h1>
+          <p class="hero-description">
+            Everyday pieces, considered carefully. Find your next favorite thing.
+          </p>
+          <a class="button button-dark" href="#shop">Explore the collection <span aria-hidden="true">↗</span></a>
+          <div class="hero-note"><span class="sparkle">✳</span> Small details. Better days.</div>
+        </div>
+        <div class="hero-image" role="img" aria-label="A calm, sunlit living room with modern home furnishings">
+          <span class="image-caption">The slow morning edit — 01 / 04</span>
+        </div>
+        <div class="hero-sticker" aria-hidden="true">GOOD<br />BY<br />DESIGN</div>
+      </section>
+
+      <section class="shop-section section-wrap" id="shop">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Your next favorite</p>
+            <h2>Shop the good stuff</h2>
+          </div>
+          <p class="section-subtitle">A few everyday upgrades, picked just for you.</p>
+        </div>
+
+        <div class="shop-controls">
+          <div class="category-list" id="categories" aria-label="Filter products"></div>
+          <label class="search-box">
+            <span class="sr-only">Search products</span>
+            <span aria-hidden="true">⌕</span>
+            <input id="product-search" type="search" placeholder="Find something..." autocomplete="off" />
+          </label>
+        </div>
+
+        <div class="product-grid" id="product-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="services-section" id="services">
+        <div class="section-wrap">
+          <div class="section-heading services-heading">
+            <div>
+              <p class="eyebrow">Behind the good stuff</p>
+              <h2>Everything in its place.</h2>
+            </div>
+            <div class="service-summary">
+              <span class="status-pulse" id="overall-indicator"></span>
+              <span id="overall-status">Checking services…</span>
+              <button id="refresh-services" class="refresh-button" type="button" aria-label="Refresh service status">↻</button>
+            </div>
+          </div>
+          <p class="services-intro">
+            Four services power the storefront. Check their live health or open each service directly.
+          </p>
+          <div class="service-grid" id="service-grid"></div>
+          <p class="demo-note">This starter does not process payments or include customer authentication.</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <dialog class="cart-dialog" id="cart-dialog" aria-labelledby="cart-title">
+      <div class="cart-header">
+        <div><p class="eyebrow">Your picks</p><h2 id="cart-title">Shopping bag</h2></div>
+        <button class="close-button" id="cart-close" type="button" aria-label="Close shopping bag">×</button>
+      </div>
+      <div class="cart-items" id="cart-items"></div>
+      <div class="cart-footer">
+        <div class="cart-total"><span>Subtotal</span><strong id="cart-total">$0.00</strong></div>
+        <label class="checkout-field">Your name<input id="checkout-name" name="name" autocomplete="name" maxlength="120" required /></label>
+        <label class="checkout-field">Email address<input id="checkout-email" name="email" type="email" autocomplete="email" maxlength="254" required /></label>
+        <button class="button button-dark checkout-button" id="checkout-button" type="button">Place order <span aria-hidden="true">↗</span></button>
+        <button class="activity-button" id="activity-button" type="button">View recent orders &amp; notifications</button>
+        <div class="customer-activity" id="customer-activity" aria-live="polite"></div>
+        <p>Your bag and orders are saved in the database. This demo does not take payment.</p>
+      </div>
+    </dialog>
+
+    <footer class="footer">
+      <a class="wordmark" href="#">goodgoods<span>.</span></a>
+      <span>Thoughtful things for everyday life.</span>
+      <a href="#services">Service status ↑</a>
+    </footer>
+  </body>
+</html>

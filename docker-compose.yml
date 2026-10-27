@@ -1,4 +1,19 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      catalog:
+        condition: service_healthy
+      customers:
+        condition: service_healthy
+      orders:
+        condition: service_healthy
+      notifications:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -26,6 +41,12 @@ services:
       PGPASSWORD: ${PGPASSWORD:-local-only-change-me}
       PGSSLMODE: disable
       PG_SCHEMA: catalog
+    healthcheck: &service_healthcheck
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     ports:
       - "3001:3000"
     depends_on:
@@ -39,6 +60,7 @@ services:
     environment:
       <<: *service_environment
       PG_SCHEMA: customers
+    healthcheck: *service_healthcheck
     ports:
       - "3002:3000"
     depends_on:
@@ -52,10 +74,20 @@ services:
     environment:
       <<: *service_environment
       PG_SCHEMA: orders
+      CATALOG_URL: http://catalog:3000
+      CUSTOMERS_URL: http://customers:3000
+      NOTIFICATIONS_URL: http://notifications:3000
+    healthcheck: *service_healthcheck
     ports:
       - "3003:3000"
     depends_on:
       postgres:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      customers:
+        condition: service_healthy
+      notifications:
         condition: service_healthy
 
   notifications:
@@ -65,6 +97,7 @@ services:
     environment:
       <<: *service_environment
       PG_SCHEMA: notifications
+    healthcheck: *service_healthcheck
     ports:
       - "3004:3000"
     depends_on:

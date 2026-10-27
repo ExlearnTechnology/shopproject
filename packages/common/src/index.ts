@@ -1,15 +1,17 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import pg from "pg";
+import pg, { type Pool } from "pg";
 
 const { Pool } = pg;
 
 export interface ServiceInfo {
   name: string;
   description: string;
+  initialize?: (pool: Pool) => Promise<void>;
 }
 
 export function createService(info: ServiceInfo): {
   app: FastifyInstance;
+  db: Pool;
   start: () => Promise<void>;
 } {
   const port = Number(process.env.PORT ?? 3000);
@@ -57,8 +59,11 @@ export function createService(info: ServiceInfo): {
 
   return {
     app,
+    db: pool,
     start: async () => {
       try {
+        await pool.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
+        await info.initialize?.(pool);
         await app.listen({ port, host: "0.0.0.0" });
       } catch (error) {
         app.log.error({ err: error }, "Service failed to start");

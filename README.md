@@ -11,8 +11,9 @@ containerized services, each with its own Dockerfile:
 Each service has its own Helm-managed Deployment and ClusterIP Service. They
 use one PostgreSQL database cluster; use a separate PostgreSQL schema (and, for
 stronger isolation, a distinct database role) for each service. The starter
-exposes `/`, `/health/live`, and `/health/ready`; it intentionally leaves
-business routes and database migrations for the application-specific next step.
+exposes `/`, `/health/live`, and `/health/ready`, along with initial catalog,
+customer, order, and notification routes. Each service creates its own tables
+at startup; use versioned migrations before evolving the schema in production.
 
 ## Run locally
 
@@ -23,12 +24,37 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Check the services at `http://localhost:3001` through `http://localhost:3004`.
-For example:
+Open the storefront at `http://localhost:3000`. It includes a sample product
+catalog loaded from the Catalog service, an interactive cart, and live
+readiness checks for each backend service. Checkout saves customer details,
+creates a persisted order, and records an order confirmation with Notifications.
+The eight sample products are seeded into the Catalog database at startup.
+Adding or changing cart items saves them in the Orders database, so the bag
+survives a page refresh. Checkout creates a permanent order and item snapshot
+from the saved cart. This starter does not process payments or include customer
+authentication.
+
+Order and notification history is looked up by email without authentication,
+so keep this starter on a trusted local network and do not expose it publicly.
+
+The backend services are also available directly at `http://localhost:3001`
+through `http://localhost:3004`. For example:
 
 ```powershell
 Invoke-RestMethod http://localhost:3001/health/ready
 ```
+
+The business APIs are:
+
+- `GET /products` on Catalog
+- `POST /customers` and `GET /customers/:id` on Customers
+- `GET /carts/:cartId`, `PUT /carts/:cartId`, `POST /orders`, and `GET /orders?email=...` on Orders
+- `POST /notifications` and `GET /notifications?email=...` on Notifications
+
+The order service validates customer and product details with their owning
+services, stores order and item snapshots transactionally, and requests an
+order confirmation from Notifications. If notification recording is unavailable,
+the order remains saved and the API returns `notificationStatus: "pending"`.
 
 Stop with `docker compose down`. To remove the local database volume as well,
 use `docker compose down --volumes`.
